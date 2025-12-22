@@ -8,7 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 const TARGET_URL = "https://pegswap.xyz/";
 
 export const ConnectWalletButton: FC = () => {
-  const { connected, select, wallets, wallet } = useWallet();
+  const { connected, select, wallets } = useWallet();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
 
@@ -18,9 +18,23 @@ export const ConnectWalletButton: FC = () => {
   }
 
   const handleWalletClick = (walletName: string) => {
-    const adapter = wallets.find((w) => w.adapter.name === walletName)?.adapter;
-    
-    if (isMobile && adapter) {
+    // 1. Find the adapter
+    const wallet = wallets.find((w) => w.adapter.name === walletName);
+    const adapter = wallet?.adapter;
+    const isInstalled = wallet?.readyState === "Installed";
+
+    // 2. If the wallet is installed (Desktop or Mobile Dapp Browser), connect normally.
+    // This fixes the issue where Phantom Desktop or Mobile Dapp Browser users couldn't connect.
+    if (isInstalled && adapter) {
+      select(adapter.name);
+      setOpen(false);
+      return;
+    }
+
+    // 3. If NOT installed and user is on Mobile, use Deep Link to open the App.
+    // This fixes the issue where mobile users in Safari/Chrome (where wallet is not injected) need to be redirected.
+    // We do NOT check "&& adapter" here because the adapter won't be detected in Safari.
+    if (isMobile) {
       const encodedUrl = encodeURIComponent(TARGET_URL);
       let deepLink = "";
 
@@ -55,8 +69,6 @@ export const ConnectWalletButton: FC = () => {
           deepLink = `https://bkcode.vip?action=dapp&url=${encodedUrl}`;
           break;
         default:
-          // For other wallets not explicitly handled, try to connect normally
-          // or if they support a standard 'solana:' link (though less common for full dapp browsing)
           break;
       }
 
@@ -66,7 +78,7 @@ export const ConnectWalletButton: FC = () => {
       }
     }
 
-    // Fallback to standard selection for desktop or other wallets
+    // 4. Fallback for Desktop (not installed) -> Select to trigger "Install Wallet" prompt
     if (adapter) {
       select(adapter.name);
       setOpen(false);
