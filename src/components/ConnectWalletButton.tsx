@@ -21,14 +21,46 @@ export const ConnectWalletButton: FC = () => {
     const adapter = wallets.find((w) => w.adapter.name === walletName)?.adapter;
     
     if (isMobile && adapter) {
-      if (walletName === 'Phantom') {
-        const deepLink = `https://phantom.app/ul/browse/${encodeURIComponent(TARGET_URL)}?ref=${encodeURIComponent(TARGET_URL)}`;
-        window.location.href = deepLink;
-        return;
+      const encodedUrl = encodeURIComponent(TARGET_URL);
+      let deepLink = "";
+
+      switch (walletName) {
+        case 'Phantom':
+          deepLink = `https://phantom.app/ul/browse/${encodedUrl}?ref=${encodedUrl}`;
+          break;
+        case 'Solflare':
+          deepLink = `https://solflare.com/ul/v1/browse/${encodedUrl}?ref=${encodedUrl}`;
+          break;
+        case 'Backpack':
+          deepLink = `https://backpack.app/ul/browse/${encodedUrl}`;
+          break;
+        case 'Exodus':
+          deepLink = `exodus://dapp/${encodedUrl}`;
+          break;
+        case 'Trust':
+          // Coin ID 501 is for Solana
+          deepLink = `https://link.trustwallet.com/open_url?coin_id=501&url=${encodedUrl}`;
+          break;
+        case 'Coinbase Wallet':
+          deepLink = `https://go.cb-w.com/dapp?cb_url=${encodedUrl}`;
+          break;
+        case 'Glow':
+          deepLink = `https://glow.app/ul/browse/${encodedUrl}`;
+          break;
+        case 'Coin98':
+          deepLink = `https://coin98.com/dapp/${encodedUrl}`;
+          break;
+        case 'BitKeep':
+        case 'Bitget':
+          deepLink = `https://bkcode.vip?action=dapp&url=${encodedUrl}`;
+          break;
+        default:
+          // For other wallets not explicitly handled, try to connect normally
+          // or if they support a standard 'solana:' link (though less common for full dapp browsing)
+          break;
       }
-      
-      if (walletName === 'Solflare') {
-        const deepLink = `https://solflare.com/ul/v1/browse/${encodeURIComponent(TARGET_URL)}?ref=${encodeURIComponent(TARGET_URL)}`;
+
+      if (deepLink) {
         window.location.href = deepLink;
         return;
       }
