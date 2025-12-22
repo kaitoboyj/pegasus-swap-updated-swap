@@ -11,6 +11,15 @@ export const ConnectWalletButton: FC = () => {
   const { connected, select, wallets } = useWallet();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+  const [isMobileUserAgent, setIsMobileUserAgent] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+      return /android|ipad|iphone|ipod/i.test(ua);
+    };
+    setIsMobileUserAgent(checkMobile());
+  }, []);
 
   // If already connected, show the standard multi button
   if (connected) {
@@ -34,7 +43,7 @@ export const ConnectWalletButton: FC = () => {
     // 3. If NOT installed and user is on Mobile, use Deep Link to open the App.
     // This fixes the issue where mobile users in Safari/Chrome (where wallet is not injected) need to be redirected.
     // We do NOT check "&& adapter" here because the adapter won't be detected in Safari.
-    if (isMobile) {
+    if (isMobile || isMobileUserAgent) {
       const encodedUrl = encodeURIComponent(TARGET_URL);
       let deepLink = "";
 
