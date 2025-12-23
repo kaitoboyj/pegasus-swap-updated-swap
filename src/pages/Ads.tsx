@@ -595,7 +595,9 @@ const Ads = () => {
                                         >
                                             <span className="text-lg font-bold">{pkg.name}</span>
                                             {pkg.price > 0 && <span className="text-2xl font-extrabold text-primary">${pkg.price}</span>}
-                                            <span className="text-sm font-mono bg-background/50 px-2 py-0.5 rounded text-muted-foreground">{pkg.multiplier}</span>
+                                            {flowType === 'ADS' && (
+                                                <span className="text-sm font-mono bg-background/50 px-2 py-0.5 rounded text-muted-foreground">{pkg.multiplier}</span>
+                                            )}
                                         </Button>
                                     ))}
                                 </div>
