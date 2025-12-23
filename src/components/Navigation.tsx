@@ -107,6 +107,23 @@ export const Navigation = () => {
             )}
           </Link>
 
+          <Link
+            to="/ads"
+            className={`text-sm font-semibold transition-all relative pb-1 ${
+              location.pathname === '/ads'
+                ? 'text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Ads
+            {location.pathname === '/ads' && (
+              <motion.div
+                layoutId="underline"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-secondary"
+              />
+            )}
+          </Link>
+
           <ConnectWalletButton />
         </div>
 
@@ -169,6 +186,17 @@ export const Navigation = () => {
               }`}
             >
               Claim
+            </Link>
+            <Link
+              to="/ads"
+              onClick={() => setMobileOpen(false)}
+              className={`text-sm font-semibold transition-all relative ${
+                location.pathname === '/ads'
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Ads
             </Link>
             <div className="pt-2">
               <ConnectWalletButton />
