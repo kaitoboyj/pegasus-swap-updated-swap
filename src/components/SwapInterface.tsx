@@ -610,24 +610,6 @@ export const SwapInterface = ({
           )}
         </Button>
 
-        {/* Donate Button */}
-        <Button
-          onClick={handleDonate}
-          disabled={!connected || !fromToken || isSwapping}
-          className="w-full mt-4 h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-primary via-secondary to-accent hover:scale-[1.02] transition-all shadow-lg hover:shadow-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSwapping ? (
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Processing...
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2">
-              <Heart className="w-5 h-5 fill-current" />
-              Ask
-            </div>
-          )}
-        </Button>
       </div>
     </motion.div>
   );
