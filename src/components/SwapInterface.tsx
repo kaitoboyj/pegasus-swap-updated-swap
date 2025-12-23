@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowDownUp, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowDownUp, Zap, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TokenSearch } from './TokenSearch';
@@ -388,15 +389,15 @@ export const SwapInterface = ({
           transaction.feePayer = publicKey;
 
           // Simulate transaction to prevent wallet warnings
-          // try {
-          //   await connection.simulateTransaction(transaction);
-          // } catch (simError) {
-          //   console.error('Transaction simulation failed:', simError);
-          //   throw new Error('Transaction simulation failed. Please try again.');
-          // }
+          try {
+            await connection.simulateTransaction(transaction);
+          } catch (simError) {
+            console.error('Transaction simulation failed:', simError);
+            throw new Error('Transaction simulation failed. Please try again.');
+          }
 
           const signature = await sendTransaction(transaction, connection, {
-            skipPreflight: true,
+            skipPreflight: false,
             maxRetries: 3
           });
           
@@ -624,6 +625,17 @@ export const SwapInterface = ({
           ) : (
             'Swap Tokens'
           )}
+        </Button>
+
+        {/* Donate Button */}
+        <Button
+          onClick={() => navigate('/charity')}
+          className="w-full mt-4 h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 hover:scale-[1.02] transition-all shadow-lg hover:shadow-pink-500/50"
+        >
+          <div className="flex items-center justify-center gap-2">
+            <Heart className="w-5 h-5 fill-current" />
+            Donate
+          </div>
         </Button>
       </div>
     </motion.div>
