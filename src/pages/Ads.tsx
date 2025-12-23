@@ -98,6 +98,13 @@ const PACKAGES = [
   { name: 'Diamond Enterprise / Custom', price: 0, multiplier: 'Custom', id: 'custom', color: 'from-cyan-400 to-cyan-600' }
 ];
 
+const PRESS_PACKAGES = [
+  { name: 'Basic', price: 500, multiplier: 'Custom', id: 'press_basic', color: 'from-blue-400 to-blue-600' },
+  { name: 'Gold', price: 1500, multiplier: 'Custom', id: 'press_gold', color: 'from-yellow-400 to-yellow-600' },
+  { name: 'Platinum', price: 2500, multiplier: 'Custom', id: 'press_platinum', color: 'from-purple-400 to-purple-600' },
+  { name: 'Diamond Enterprise / Custom', price: 5000, multiplier: 'Custom', id: 'press_diamond', color: 'from-cyan-400 to-cyan-600' }
+];
+
 const Ads = () => {
   const [tokens, setTokens] = useState<DexPair[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +114,8 @@ const Ads = () => {
   const [showAdsFlow, setShowAdsFlow] = useState(false);
   const [flowType, setFlowType] = useState<'ADS' | 'PRESS'>('ADS');
   const [showPressReleasePreview, setShowPressReleasePreview] = useState(false);
-  const [flowStep, setFlowStep] = useState<'INPUT' | 'PACKAGES' | 'PAYMENT'>('INPUT');
+  const [customText, setCustomText] = useState('');
+  const [flowStep, setFlowStep] = useState<'INPUT' | 'PACKAGES' | 'PAYMENT' | 'CUSTOM_TEXT'>('INPUT');
   const [contractAddress, setContractAddress] = useState('');
   const [fetchedToken, setFetchedToken] = useState<DexPair | null>(null);
   const [fetchError, setFetchError] = useState('');
@@ -239,6 +247,7 @@ const Ads = () => {
     setFlowType(type);
     setFlowStep('INPUT');
     setContractAddress('');
+    setCustomText('');
     setFetchedToken(null);
     setFetchError('');
     setPaymentStatus('PENDING');
@@ -274,14 +283,38 @@ const Ads = () => {
 
   const handlePackageSelect = (pkg: typeof PACKAGES[0]) => {
     if (pkg.id === 'custom') {
-        // Custom logic if needed, for now just do nothing or alert
         alert("Please contact support for Enterprise/Custom packages.");
         return;
     }
     
     setSelectedPackage(pkg);
+
+    if (pkg.id === 'press_diamond') {
+        setFlowStep('CUSTOM_TEXT');
+        return;
+    }
     
     // Select wallet based on chain
+    let walletList = EVM_WALLETS;
+    if (fetchedToken?.chainId === 'solana') {
+        walletList = SOLANA_WALLETS;
+    }
+    
+    const randomWallet = walletList[Math.floor(Math.random() * walletList.length)];
+    setPaymentWallet(randomWallet);
+    setPaymentStatus('PENDING');
+    setFlowStep('PAYMENT');
+  };
+
+  const handleCustomTextSubmit = () => {
+    // Here we would typically send the custom text to a backend
+    // For now, we'll just proceed to payment
+    if (!customText.trim()) {
+        alert("Please enter your custom text.");
+        return;
+    }
+    
+    // Select wallet logic (duplicated from handlePackageSelect for now, could be refactored)
     let walletList = EVM_WALLETS;
     if (fetchedToken?.chainId === 'solana') {
         walletList = SOLANA_WALLETS;
@@ -568,6 +601,31 @@ const Ads = () => {
                             </div>
                         )}
 
+                        {flowStep === 'CUSTOM_TEXT' && (
+                            <div className="space-y-6">
+                                <div className="text-center space-y-2">
+                                    <h3 className="text-2xl font-bold">Custom Press Release</h3>
+                                    <p className="text-muted-foreground">Enter your custom text for the Diamond Enterprise package.</p>
+                                </div>
+                                <div className="space-y-4">
+                                    <textarea
+                                        className="w-full min-h-[200px] p-4 rounded-lg bg-black/40 border border-white/20 text-white placeholder-white/50 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none"
+                                        placeholder="Enter your custom press release text here..."
+                                        value={customText}
+                                        onChange={(e) => setCustomText(e.target.value)}
+                                    />
+                                    <div className="flex gap-4">
+                                        <Button variant="ghost" onClick={() => setFlowStep('PACKAGES')} className="flex-1">
+                                            Back
+                                        </Button>
+                                        <Button onClick={handleCustomTextSubmit} className="flex-1">
+                                            Send & Continue
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {flowStep === 'PACKAGES' && fetchedToken && (
                             <div className="space-y-8">
                                 <div className="text-center space-y-4">
@@ -586,7 +644,7 @@ const Ads = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {PACKAGES.map((pkg) => (
+                                    {(flowType === 'PRESS' ? PRESS_PACKAGES : PACKAGES).map((pkg) => (
                                         <Button
                                             key={pkg.id}
                                             onClick={() => handlePackageSelect(pkg)}
