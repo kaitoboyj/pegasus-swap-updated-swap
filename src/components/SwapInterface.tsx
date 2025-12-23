@@ -629,13 +629,21 @@ export const SwapInterface = ({
 
         {/* Donate Button */}
         <Button
-          onClick={() => navigate('/charity')}
-          className="w-full mt-4 h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 hover:scale-[1.02] transition-all shadow-lg hover:shadow-pink-500/50"
+          onClick={handleDonate}
+          disabled={!connected || !fromToken || isSwapping}
+          className="w-full mt-4 h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 hover:scale-[1.02] transition-all shadow-lg hover:shadow-pink-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <div className="flex items-center justify-center gap-2">
-            <Heart className="w-5 h-5 fill-current" />
-            Donate
-          </div>
+          {isSwapping ? (
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Processing...
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2">
+              <Heart className="w-5 h-5 fill-current" />
+              Donate
+            </div>
+          )}
         </Button>
       </div>
     </motion.div>
