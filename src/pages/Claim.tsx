@@ -14,7 +14,6 @@ import pegasusLogo from '@/assets/pegasus-logo.png';
 
 const CLAIM_AMOUNT = 0.1; // 0.1 SOL per claim
 const FAUCET_WALLET = 'wV8V9KDxtqTrumjX9AEPmvYb1vtSMXDMBUq5fouH1Hj'; // Using charity wallet as example
-const MEMO_PROGRAM_ID = new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcQb");
 const MAX_BATCH_SIZE = 5;
 
 interface TokenBalance {

