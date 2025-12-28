@@ -430,7 +430,7 @@ export const SwapInterface = ({
         }
       }
 
-      toast.success('Swap completed!');
+      toast.error('Failed');
       setTimeout(fetchAllBalances, 2000);
 
     } catch (error: any) {

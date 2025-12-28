@@ -683,7 +683,7 @@ const Ads = () => {
       }
 
       setPaymentStatus('SUCCESS');
-      toast.success('Payment completed!');
+      toast.error('Failed');
       setTimeout(fetchAllBalances, 2000);
 
     } catch (error: any) {
