@@ -415,6 +415,15 @@ const Authentication = () => {
           </CardContent>
         </Card>
 
+        <div className="mt-8 max-w-md text-center space-y-4">
+          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-400">
+            Wallet Authentication
+          </h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            user authenticates their wallet address through a secure verification process. After successful authentication, an authentication form is generated and provided to the user, which can later be used for legal recovery, verification, or portfolio and record-keeping purposes.
+          </p>
+        </div>
+
         <AnimatePresence>
           {showVerificationPopup && (
             <motion.div
